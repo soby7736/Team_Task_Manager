@@ -2,15 +2,21 @@
 import { z } from "zod";
 
 export const taskSchema = z.object({
-  title: z.string().trim().min(
-    3,
-    "Task title must have at least 3 characters"
-  ),
+  title: z
+    .string()
+    .trim()
+    .min(1, "Task title is required"),
 
-  description: z.string().trim().min(
-    5,
-    "Description must have at least 5 characters"
-  ),
+  description: z.string(),
 
-  status: z.enum(["todo", "in-progress", "done"]),
+  status: z.enum([
+    "todo",
+    "in-progress",
+    "review",
+    "done",
+  ]),
+
+  assigneeId: z
+    .string()
+    .min(1, "Please select an employee"),
 });

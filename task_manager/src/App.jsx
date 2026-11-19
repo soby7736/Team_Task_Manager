@@ -19,6 +19,7 @@ function App() {
 
         dispatch(setCredentials(user));
       } catch (error) {
+        console.log(error)
         dispatch(clearCredentials());
       }
     }

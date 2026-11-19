@@ -11,6 +11,7 @@ export async function login(username, password) {
   });
 
   const { accessToken, refreshToken, ...user } = response.data;
+  console.log(refreshToken)
 
   setToken(accessToken);
 

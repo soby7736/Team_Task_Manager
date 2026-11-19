@@ -1,13 +1,28 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { taskSchema } from "../schemas/taskSchema";
 import { createTask } from "../services/taskService";
+import { getMembers } from "../services/memberService";
 
 function TaskForm({ projectId }) {
   const queryClient = useQueryClient();
+
+  // Fetch employees from DummyJSON
+  const {
+    data: members = [],
+    isLoading: membersLoading,
+    isError: membersError,
+  } = useQuery({
+    queryKey: ["members"],
+    queryFn: getMembers,
+  });
 
   const {
     register,
@@ -21,15 +36,21 @@ function TaskForm({ projectId }) {
       title: "",
       description: "",
       status: "todo",
+      assigneeId: "",
     },
   });
 
   const taskMutation = useMutation({
-    mutationFn: (data) => createTask(data, projectId),
+    mutationFn: (data) =>
+      createTask(data, projectId),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["tasks", projectId],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard"],
       });
 
       reset();
@@ -49,10 +70,15 @@ function TaskForm({ projectId }) {
         Create New Task
       </h2>
 
+      {/* Task Title */}
+      <label className="block mb-2 font-medium">
+        Task Title
+      </label>
+
       <input
         {...register("title")}
-        placeholder="Task title"
-        className="border p-2 rounded w-full mb-2"
+        placeholder="Enter task title"
+        className="border p-3 rounded-lg w-full mb-2"
       />
 
       {errors.title && (
@@ -61,10 +87,15 @@ function TaskForm({ projectId }) {
         </p>
       )}
 
+      {/* Description */}
+      <label className="block mb-2 font-medium mt-3">
+        Description
+      </label>
+
       <textarea
         {...register("description")}
-        placeholder="Task description"
-        className="border p-2 rounded w-full mb-2"
+        placeholder="Enter task description"
+        className="border p-3 rounded-lg w-full mb-2"
       />
 
       {errors.description && (
@@ -73,12 +104,20 @@ function TaskForm({ projectId }) {
         </p>
       )}
 
+      {/* Task Status */}
+      <label className="block mb-2 font-medium mt-3">
+        Task Status
+      </label>
+
       <select
         {...register("status")}
-        className="border p-2 rounded w-full mb-2"
+        className="border p-3 rounded-lg w-full mb-2"
       >
         <option value="todo">To Do</option>
-        <option value="in-progress">In Progress</option>
+        <option value="in-progress">
+          In Progress
+        </option>
+        <option value="review">Review</option>
         <option value="done">Done</option>
       </select>
 
@@ -88,16 +127,60 @@ function TaskForm({ projectId }) {
         </p>
       )}
 
+      {/* Employee Assignment */}
+      <label className="block mb-2 font-medium mt-3">
+        Assign Employee
+      </label>
+
+      <select
+        {...register("assigneeId")}
+        disabled={membersLoading || membersError}
+        className="border p-3 rounded-lg w-full mb-2 disabled:opacity-50"
+      >
+        <option value="">
+          {membersLoading
+            ? "Loading employees..."
+            : "Select an employee"}
+        </option>
+
+        {members.map((member) => (
+          <option
+            key={member.id}
+            value={String(member.id)}
+          >
+            {member.firstName} {member.lastName}
+          </option>
+        ))}
+      </select>
+
+      {errors.assigneeId && (
+        <p className="text-red-500 text-sm mb-3">
+          {errors.assigneeId.message}
+        </p>
+      )}
+
+      {membersError && (
+        <p className="text-red-500 text-sm mb-3">
+          Failed to load employees.
+        </p>
+      )}
+
+      {/* Submission Error */}
       {taskMutation.isError && (
         <p className="text-red-500 mb-3">
           Failed to create task. Please try again.
         </p>
       )}
 
+      {/* Create Button */}
       <button
         type="submit"
-        disabled={taskMutation.isPending}
-        className="bg-blue-600 text-white px-5 py-2 rounded disabled:opacity-50"
+        disabled={
+          taskMutation.isPending ||
+          membersLoading ||
+          membersError
+        }
+        className="bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
       >
         {taskMutation.isPending
           ? "Creating..."
